@@ -1,6 +1,22 @@
-import java.awt.Image;
+package eu.erdin.java.flappy;
 
+
+import eu.erdin.java.flappy.view.Label;
+import eu.erdin.java.flappy.view.Render;
+
+import java.awt.Image;
+import java.util.Random;
+
+/**
+ * The gap between pipes is always 175px
+ */
 public class Pipe {
+
+    private static Random RANDOM = new Random();
+
+    public static final String SOUTH = "south";
+    public static final String NORTH = "north";
+    public static final int HEIGHT = 400;
 
     public int x;
     public int y;
@@ -22,7 +38,7 @@ public class Pipe {
         height = 400;
         x = App.WIDTH + 2;
 
-        if (orientation.equals("south")) {
+        if (orientation.equals(SOUTH)) {
             y = -(int)(Math.random() * 120) - height / 2;
         }
     }
@@ -33,13 +49,12 @@ public class Pipe {
 
     public boolean collides(int _x, int _y, int _width, int _height) {
 
-        int margin = 2;
+        int margin = 0;
 
         if (_x + _width - margin > x && _x + margin < x + width) {
-
-            if (orientation.equals("south") && _y < y + height) {
+            if (orientation.equals(SOUTH) && _y < y + height) {
                 return true;
-            } else if (orientation.equals("north") && _y + _height > y) {
+            } else if (orientation.equals(NORTH) && _y + _height > y) {
                 return true;
             }
         }
@@ -47,16 +62,25 @@ public class Pipe {
         return false;
     }
 
+
     public Render getRender() {
         Render r = new Render();
-        r.x = x;
-        r.y = y;
+        r.setX(x);
+        r.setY(y);
 
         if (image == null) {
             image = Util.loadImage("lib/pipe-" + orientation + ".png");
         }
-        r.image = image;
+        r.setImage(image);
+        r.getLabels().add(getLabel());
 
         return r;
+    }
+
+    private Label getLabel(){
+        if (orientation.equals(SOUTH)){
+            return new Label(x + "/" + y, x + 10, y + height + 15);
+        }
+        return new Label(x + "/" + y, x + 10, y - 10);
     }
 }

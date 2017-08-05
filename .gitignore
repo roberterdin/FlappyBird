@@ -1,2 +1,5 @@
+.idea/
+projec/
+target/
 .DS_Store
 *.class

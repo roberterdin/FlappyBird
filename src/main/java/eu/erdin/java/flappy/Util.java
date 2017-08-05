@@ -1,3 +1,5 @@
+package eu.erdin.java.flappy;
+
 import java.awt.Image;
 import javax.imageio.ImageIO;
 import java.io.File;

@@ -1,3 +1,9 @@
+package eu.erdin.java.flappy;
+
+
+import eu.erdin.java.flappy.bot.FlappyBot;
+import eu.erdin.java.flappy.view.Render;
+
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 
@@ -6,21 +12,20 @@ public class Game {
     public static final int PIPE_DELAY = 100;
 
     private Boolean paused;
-
     private int pauseDelay;
     private int restartDelay;
     private int pipeDelay;
-
     private Bird bird;
     private ArrayList<Pipe> pipes;
-    private Keyboard keyboard;
-
+    private Keyboard keyboard = Keyboard.getInstance();
     public int score;
     public Boolean gameover;
     public Boolean started;
 
-    public Game() {
-        keyboard = Keyboard.getInstance();
+    private FlappyBot bot;
+
+    public Game(FlappyBot bot) {
+        this.bot = bot;
         restart();
     }
 
@@ -50,7 +55,26 @@ public class Game {
         if (paused)
             return;
 
-        bird.update();
+        // send state
+        boolean flap = false;
+        if (pipes.size() > 0){
+            assert pipes.size() % 2 == 0;
+            int[][] pipesToReport = new int[this.pipes.size()/2][2];
+            int i = 0;
+            for (Pipe p : pipes){
+                if (p.orientation.equals(Pipe.NORTH)){
+                    continue;
+                }
+                pipesToReport[i][0] = p.x;
+                pipesToReport[i][1] = p.y + Pipe.HEIGHT;
+                i ++;
+            }
+            if (!gameover){
+                flap = bot.flap(new FlappyState(this.getBird().x, this.getBird().y, pipesToReport));
+            }
+        }
+
+        bird.update(flap);
 
         if (gameover)
             return;
@@ -151,10 +175,16 @@ public class Game {
             }
         }
 
-        // Ground + Bird collision
+        // Ground
         if (bird.y + bird.height > App.HEIGHT - 80) {
             gameover = true;
             bird.y = App.HEIGHT - 80 - bird.height;
         }
     }
+
+
+    public Bird getBird() {
+        return bird;
+    }
+
 }

@@ -1,0 +1,122 @@
+package eu.erdin.flappy.bots
+
+import eu.erdin.flappy.model.{Pipe, State}
+import eu.erdin.java.flappy.FlappyState
+import eu.erdin.java.flappy.bot.FlappyBot
+
+/**
+  * Performs simple depth first search. The decision whether to expand the flap or glide option first
+  * is based on a simple heuristic (bird is below or abote the middle of the next pipe)
+  * @author robert.erdin@gmail.com
+  */
+
+class DepthFirstHeurisicBot extends FlappyBot {
+  val GRAVITY = 0.5D
+  val BIRD_HEIGHT = 32
+  val BIRD_WIDTH = 45
+  val PIPE_WIDTH = 66
+  val GAP_HEIGHT = 175
+
+  private var iteration = 0
+  private var coolDown = 0
+  private var yVelocity = 0.5D
+
+
+  private def flappyStateToState(fs: FlappyState): State = {
+    State(
+      fs.getX,
+      fs.getY,
+      yVelocity,
+      coolDown,
+      fs.getPipes
+        .filter(p => p(0) + PIPE_WIDTH >= fs.getX)
+        .sortWith((p1, p2) => p1(0) < p2(0) )
+        .map(p => Pipe(p(0), p(1))).toList
+    )
+  }
+
+  def updateState(flap: Boolean): Unit = if (flap) {
+    yVelocity = -10
+    coolDown = 10
+  } else {
+    yVelocity += GRAVITY
+    coolDown = math.max(coolDown - 1, 0)
+  }
+
+  override def flap(fs: FlappyState): Boolean = {
+    iteration += 1
+    val state: State = flappyStateToState(fs)
+
+    if (state.coolDown > 0) {
+      coolDown -= 1
+      yVelocity += GRAVITY
+      return false
+    }
+
+    val firstAction = List(true, false).minBy(a => heuristic(nextState(state, a)))
+    if(explore(List(nextState(state, flap = firstAction)))){
+      updateState(firstAction)
+      return firstAction
+    }
+    !firstAction
+  }
+
+  def explore(state: List[State]): Boolean = {
+    if (state.head.x > state.head.pipes.head.x + PIPE_WIDTH){
+      return true
+    }
+    if (isCrash(state.head)){
+      return false
+    }
+    if (state.head.coolDown > 0){
+      return explore(nextState(state.head, flap = false) :: state)
+    }
+    val findsGoal = List(true, false).sortBy(a => heuristic(nextState(state.head, a)))
+      .exists(action => { explore(nextState(state.head, action) :: state)})
+    if (findsGoal){
+      return true
+    }
+    false // by default
+  }
+
+  def nextState(state: State, flap: Boolean): State = {
+    var yvel: Double = state.yVel + 0.5
+    var coolDown = math.max(0, state.coolDown - 1)
+    if (flap){
+      coolDown = 10
+      yvel = -10
+    }
+    State(
+      state.x + 3,
+      state.y + yvel.toInt,
+      yvel,
+      coolDown,
+      state.pipes)
+  }
+
+  def isCrash(state: State): Boolean = {
+    if(state.y < 0 - BIRD_HEIGHT){ // ceiling (only used if the heuristic is flap first)
+      return true
+    }
+
+    if(state.y + BIRD_HEIGHT > 420){ // ground
+      return true
+    }
+
+    !state.pipes.forall(p => {
+      if (state.x + BIRD_WIDTH <= p.x || state.x >= p.x + PIPE_WIDTH){
+        // is either before or after the pipe --> safe
+        return false
+      }
+      if (state.y >= p.y && state.y + BIRD_HEIGHT <= p.y + GAP_HEIGHT){
+        return false
+      }
+      return true
+    })
+  }
+
+  def heuristic(state: State): Int = {
+    // default pipe in the middle, 249 - 87
+    math.abs(state.y - state.pipes.find(p => p.x + PIPE_WIDTH > state.x).getOrElse(Pipe(499,162)).x + 87)
+  }
+}
