@@ -1,6 +1,6 @@
 package eu.erdin.scala.flappy
 
-import eu.erdin.flappy.bots.DepthFirstHeurisicBot
+import eu.erdin.flappy.bots.{DepthFirstGlideFirstBot, DepthFirstHeurisicBot}
 import eu.erdin.java.flappy.App
 
 /**
